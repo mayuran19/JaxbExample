@@ -1,0 +1,60 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+
+
+sourceSets {
+	generated {
+		java { srcDirs = ["src/main/generated"]}
+		compileClasspath += sourceSets.main.output
+	}
+}
+
+sourceCompatibility = 1.5
+version = '1.0'
+jar {
+	manifest {
+		attributes 'Implementation-Title': 'Gradle Quickstart', 'Implementation-Version': version
+	}
+}
+
+repositories { mavenCentral() }
+
+configurations { provided }
+
+dependencies {
+	compile group: 'commons-collections', name: 'commons-collections', version: '3.2'
+	testCompile group: 'junit', name: 'junit', version: '4.+'
+	provided group: 'com.sun.xml.bind', name: 'jaxb-impl', version: '2.2.6'
+	provided group: 'com.sun.xml.bind', name: 'jaxb-xjc', version: '2.2.6'
+}
+
+test { systemProperties 'property': 'value' }
+
+uploadArchives {
+	repositories { flatDir { dirs 'repos'
+		} }
+}
+
+def generatedResources = "src/main/generated"
+
+task jaxb(){
+	description 'Converts xsds to classes'
+	def jaxbTargetDir = file( generatedResources )
+	jaxbTargetDir.deleteDir()
+
+	doLast {
+		jaxbTargetDir.mkdirs()
+		ant.
+		ant.taskdef(name: 'xjc', classname: 'com.sun.tools.xjc.XJCTask', classpath: configurations.provided.asPath)
+		ant.jaxbTargetDir = jaxbTargetDir
+		ant.xjc(destdir: '${jaxbTargetDir}', package: 'com.mayuran19.generated.example') {
+			schema(dir:'src/main/resources/xsd/example', includes: '**/*.xsd')
+		}
+
+		//ant.xjc(destdir: '${jaxbTargetDir}', package: 'com.mayuran19.generated') {
+		//	schema(dir:'src/main/resources/xsd', includes: '*.xsd')
+		//}
+	}
+}
+
+task generateSources(dependsOn: jaxb) { description 'generates the resources defined by the external xsd\'s' }
